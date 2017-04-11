@@ -2,10 +2,11 @@
 
 //Global variables
 var attrArray = ["Per capita Income", "Food, beverages & tobacco", "Clothing & footwear", "Housing",
- "House furnishing", "Transport & communication", "Recreation", "Education", "Other"];
-var expressed = attrArray[0]; //initial attribute
+                 "House furnishing", "Transport & communication", "Recreation", "Education", "Other"];
+//initial attribute
+var expressed = attrArray[0];
 
-
+//Chart frame
 var chartWidth = window.innerWidth * 0.85,
     chartHeight = 473,
     leftPadding = 25,
@@ -15,11 +16,10 @@ var chartWidth = window.innerWidth * 0.85,
     chartInnerHeight = chartHeight - topBottomPadding * 2,
     translate = "translate(" + leftPadding + "," + topBottomPadding + ")";
 
-    //create a scale to size bars proportionally to frame and for axis
-    var yScale = d3.scaleLinear()
-        .range([463, 0])
-        .domain([0, 1.01]);
-
+//a scale to size bars proportionally to frame and for axis
+var yScale = d3.scaleLinear()
+    .range([463, 0])
+    .domain([0, 2]);
 
 //Script starts when window loads
 window.onload = setMap();
@@ -30,49 +30,49 @@ function setMap(){
   var width = window.innerWidth * .6,
       height = 460;
 
-    //create new svg container for the map
-    var map = d3.select("body")
-        .append("svg")
-        .attr("class", "map")
-        .attr("width", width)
-        .attr("height", height);
+  //svg container for the map
+  var map = d3.select("body")
+      .append("svg")
+      .attr("class", "map")
+      .attr("width", width)
+      .attr("height", height);
 
-    //create Projection
-	 	var projection = d3.geoRobinson()
-		    .center([0, 0])
-        .scale(120)
-		    .translate([width / 2, height / 2])
+  //create Projection
+ 	var projection = d3.geoRobinson()
+	    .center([0, 0])
+      .scale(120)
+	    .translate([width / 2, height / 2])
+ //draw Projection
+  var path = d3.geoPath()
+      .projection(projection);
 
-	  var path = d3.geoPath()
-        .projection(projection);
 
-    //use d3.queue to parallelize asynchronous data loading
-    d3.queue()
-        .defer(d3.csv, "data/IncomeElastic.csv") //load attributes from csv
-		    .defer(d3.json, "data/countries5.topojson") //load background spatial data
 
-        .await(callback);
+  //use d3.queue to parallelize asynchronous data loading
+  d3.queue()
+      .defer(d3.csv, "data/IncomeElastic.csv") //load attributes from csv
+	    .defer(d3.json, "data/countries5.topojson") //load background spatial data
 
-  	function callback(error, csvData, world){
+      .await(callback);
 
-        var allCountries = topojson.feature(world, world.objects.collection).features;
-        console.log(allCountries);
-
-        joinData(allCountries, csvData);
-
-        setGraticule(map, path);
-
-        //create the color scale
-        var colorScale = makeColorScale(csvData);
-
-        setEnumerationUnits(allCountries, map, path, colorScale);
-
-        //add coordinated visualization to the map
-        setChart(csvData, colorScale);
-
-        createDropdown(csvData);
-
-        changeAttribute(expressed, csvData);
+	function callback(error, csvData, world){
+      //Translates the topojson of world countries
+      var allCountries = topojson.feature(world, world.objects.collection).features;
+      console.log(allCountries);
+      //joins the csv data to the country enumeration units
+      joinData(allCountries, csvData);
+      //places graticule on the map
+      setGraticule(map, path);
+      //create the color scale
+      var colorScale = makeColorScale(csvData);
+      //place enumeration units on map
+      setEnumerationUnits(allCountries, map, path, colorScale);
+      //add coordinated visualization to the map
+      setChart(csvData, colorScale);
+      //the dropdown menu
+      createDropdown(csvData);
+      //the color and time transition when clicking menu options
+      changeAttribute(expressed, csvData);
 
     };
 };//End of setMap
@@ -129,6 +129,7 @@ function setGraticule(map, path){
 
 //function to class data into 5 natural breaks classes each with different color
 function makeColorScale(data){
+    //green
     var colorClasses = [
         "#edf8e9",
         "#bae4b3",
@@ -177,18 +178,17 @@ function setEnumerationUnits(allCountries, map, path, colorScale){
         .style("fill", function(d){
             return choropleth(d.properties, colorScale);
         })
-
+        //Country outlines highlighted on mouseover
         .on("mouseover", function(d){
-    highlight(d.properties);
-})
-
-.on("mouseout", function(d){
-    dehighlight(d.properties);
-})
-
-.on("mousemove", moveLabel)
-
-
+          highlight(d.properties);
+      })
+        //Delighted when mouse is not on country
+        .on("mouseout", function(d){
+            dehighlight(d.properties);
+        })
+        //label pops up when country is moused over
+        .on("mousemove", moveLabel)
+        //the highlight style
         var desc = countries.append("desc")
         .text('{"stroke": "#000", "stroke-width": "0.5px"}')
 
@@ -203,9 +203,9 @@ function choropleth(props, colorScale){
     //if attribute value exists, assign a color; otherwise assign gray
     if (val && val != NaN){
     	return colorScale(val);
-    } else {
-    	return "#CCC";
-    };
+  } else {
+  	return "#CCC";
+  };
 };
 
 //function to create coordinated bar chart
@@ -240,42 +240,40 @@ function setChart(csvData, colorScale){
         })
         .attr("width", chartInnerWidth / csvData.length - 1)
 
+        //Highlights / dehighlights / labels depending on users mouse location
         .on("mouseover", highlight)
         .on("mouseout", dehighlight)
         .on("mousemove", moveLabel)
-
+        //bar highlight style
         var desc = bars.append("desc")
             .text('{"stroke": "none", "stroke-width": "0px"}');
 
 
+        //text element for the chart title
+        var chartTitle = chart.append("text")
+            .attr("x", 200)
+            .attr("y", 40)
+            .attr("class", "chartTitle")
+            .text( attrArray[0] + expressed[3] + " in each country");
 
+        //create vertical axis generator
+        var yAxis = d3.axisLeft()
+            .scale(yScale);
 
+        //place axis
+        var axis = chart.append("g")
+            .attr("class", "axis")
+            .attr("transform", translate)
+            .call(yAxis);
 
-    //create a text element for the chart title
-    var chartTitle = chart.append("text")
-        .attr("x", 600)
-        .attr("y", 40)
-        .attr("class", "chartTitle")
-        .text( attrArray[0] + expressed[3] + " in each country");
+        //create frame for chart border
+        var chartFrame = chart.append("rect")
+            .attr("class", "chartFrame")
+            .attr("width", chartInnerWidth)
+            .attr("height", chartInnerHeight)
+            .attr("transform", translate);
 
-    //create vertical axis generator
-    var yAxis = d3.axisLeft()
-        .scale(yScale);
-
-    //place axis
-    var axis = chart.append("g")
-        .attr("class", "axis")
-        .attr("transform", translate)
-        .call(yAxis);
-
-    //create frame for chart border
-    var chartFrame = chart.append("rect")
-        .attr("class", "chartFrame")
-        .attr("width", chartInnerWidth)
-        .attr("height", chartInnerHeight)
-        .attr("transform", translate);
-
-    updateChart(bars, csvData.length, colorScale);
+        updateChart(bars, csvData.length, colorScale);
 };
 
 //function to create a dropdown menu for attribute selection
@@ -285,16 +283,16 @@ function createDropdown(csvData){
         .append("select")
         .attr("class", "dropdown")
         .on("change", function(){
-    changeAttribute(this.value, csvData)
+        changeAttribute(this.value, csvData)
 });
 
-    //add initial option
+    //initial option
     var titleOption = dropdown.append("option")
         .attr("class", "titleOption")
         .attr("disabled", "true")
         .text("Select Attribute");
 
-    //add attribute name options
+    //attribute name options
     var attrOptions = dropdown.selectAll("attrOptions")
         .data(attrArray)
         .enter()
@@ -314,24 +312,24 @@ function changeAttribute(attribute, csvData){
     //recolor enumeration units
     var regions = d3.selectAll(".countries")
     .transition()
-.duration(1000)
-        .style("fill", function(d){
-            return choropleth(d.properties, colorScale)
+    .duration(1000)
+    .style("fill", function(d){
+          return choropleth(d.properties, colorScale)
         });
 
-        //re-sort, resize, and recolor bars
-var bars = d3.selectAll(".bar")
-    //re-sort bars
-    .sort(function(a, b){
-        return b[expressed] - a[expressed];
-    })
-    .transition() //add animation
-.delay(function(d, i){
-    return i * 20
-})
-.duration(500);
+  //re-sort, resize, and recolor bars
+  var bars = d3.selectAll(".bar")
+      //re-sort bars
+      .sort(function(a, b){
+          return b[expressed] - a[expressed];
+      })
+      .transition() //add animation
+      .delay(function(d, i){
+      return i * 20
+      })
+      .duration(500);
 
-  updateChart(bars, csvData.length, colorScale);
+    updateChart(bars, csvData.length, colorScale);
 
 };
 
@@ -354,7 +352,7 @@ function updateChart(bars, n, colorScale){
         });
 
         var chartTitle = d3.select(".chartTitle")
-    .text("Number of Variable " + expressed[3] + " in each country");
+    .text(expressed + " in each country");
 };
 
 
@@ -366,7 +364,8 @@ function highlight(props){
         .style("stroke-width", "2")
         setLabel(props);
 };
-
+//function to dehighlight countries that became highlighted when user was mousing
+//over a country. Returns to original state prior to highlight
 function dehighlight(props){
     var selected = d3.selectAll("." + props.name)
         .style("stroke", function(){
@@ -388,7 +387,7 @@ function dehighlight(props){
     d3.select(".infolabel")
     .remove();
 };
-
+//a label popup for countries and bars  showing the name and attribute
 function setLabel(props){
     //label content
     var labelAttribute = "<h1>" + props[expressed] +
@@ -405,7 +404,7 @@ function setLabel(props){
         .attr("class", "labelname")
         .html(props.name);
 };
-
+//function to have the label follow the mouse
 function moveLabel(){
     //get width of label
     var labelWidth = d3.select(".infolabel")

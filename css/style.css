@@ -1,18 +1,22 @@
-.map {
-    border: medium solid #999;
-    margin: 10px 0 0 20px;
+#title{
+    padding: 10px;
+    text-align: center;
+    background-color: #c3c3c3;
+}
 
+.map {
+    margin: 10px 0 0 20px;
     display: block;
-margin-left: auto;
-margin-right: auto
+    margin-left: auto;
+    margin-right: auto
 }
 
 .chart {
 
     margin: 7px 20px 0 0;
     display: block;
-margin-left: auto;
-margin-right: auto
+  margin-left: auto;
+  margin-right: auto
 }
 
 .chartTitle {
